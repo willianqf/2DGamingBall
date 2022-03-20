@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 
 public class Spawn : MonoBehaviour
 {
+    [SerializeField]
+    private GameObject NivelScrement;
     public static Spawn spawn;
     [SerializeField]
     private GameObject Obstaculos;
@@ -69,7 +71,9 @@ public class Spawn : MonoBehaviour
     {       
         if(scene.name != "Inicio")
         {
-            TextNivel.text = "Nivel: " + (NivelSpeed + 1).ToString();
+            int nivel = NivelSpeed + 1;
+            Nivel niv = NivelScrement.GetComponent<Nivel>();
+            niv.alternivel(nivel);
         }
     }
 
@@ -95,7 +99,7 @@ public class Spawn : MonoBehaviour
         while(true){
             //GameObject especial = Instantiate(SpecialBallteste[Random.Range(0, 2)], transform.position, transform.rotation);
             GameObject especial = Instantiate(SpecialBall[Random.Range(0, SpecialBall.Length)], transform.position, transform.rotation);
-            //GameObject especial = Instantiate(SpecialBall[2], transform.position, transform.rotation);
+            //GameObject especial = Instantiate(SpecialBall[0], transform.position, transform.rotation);
             Obstacle obs = especial.GetComponent<Obstacle>();
             obs.AlterSpeed(Random.Range(2, 5));
             if(Bola.instBola.valorInvencible() == true && especial.name == "ObsInvencivel(Clone)")
@@ -128,6 +132,15 @@ public class Spawn : MonoBehaviour
                     obs.AlterSpeed(5);
                 }
             }
+            if (especial.name == "ObsWeapon(Clone)")
+            {
+                if(Bola.instBola.TiroAtivado)
+                {
+                    Destroy(especial, 0);
+                    especial = Instantiate(SpecialBall[1], transform.position, transform.rotation);
+                }
+                obs.AlterSpeed(5);
+            }
             especial.transform.SetParent(Bonus.transform);
             Destroy(especial, 5);
             yield return new WaitForSeconds(Random.Range(2, 6));
@@ -139,9 +152,9 @@ public class Spawn : MonoBehaviour
     {
         if (GameController.instance.pontuacao > NivelSpeedQuant)
         {
-            if (!(NivelSpeed == 14))
+            NivelSpeedQuant += 5;
+            if (NivelSpeed < 14)
             {
-                NivelSpeedQuant += 5;
                 NivelSpeed++;
                 if(bombactive)
                 {

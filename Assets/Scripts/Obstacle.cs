@@ -72,6 +72,11 @@ public class Obstacle : MonoBehaviour
                 Spawn.spawn.IniciarTimeSpawn();
                 Destroy(gameObject);
             }
+            else if (transform.name =="ObsWeapon(Clone)")
+            {
+                Bola.instBola.ActiveTiro();
+                Destroy(gameObject);
+            }
             else
             {
               

@@ -20,13 +20,13 @@ public class Bola : MonoBehaviour
     public Transform InvencibleUI;
     public Transform VelocityUI;
     private Animator Anim;
+    private bool GameOver = false;
 
-    private float tempointervalo = 0.2f;
-    private float tempo;
-    private float contInv = 0;
-    private bool Piscar = false;
-    private bool IniCont = false;
-
+    [SerializeField]
+    private GameObject Tiro;
+    [SerializeField]
+    private GameObject WeaponTiro;
+    public bool TiroAtivado = false;
     void Awake() {
         instBola = this;
         Anim = GetComponent<Animator>();
@@ -35,14 +35,6 @@ public class Bola : MonoBehaviour
     {
         MovimentBall();
         VerificyBug();
-        if (IniCont)
-        {
-            TempoInvencibilidade();
-            if (contInv < 4 && contInv > 0)
-            {
-                PiscarIcon();
-            }
-        }
         //IsClick();
         //CheckPoint();
     }
@@ -86,27 +78,98 @@ public class Bola : MonoBehaviour
     {
         speedball = valor;
     }
-    void TempoInvencibilidade()
+
+    public void ActiveTiro()
     {
-        contInv -= Time.deltaTime;
+        StartCoroutine(IniciarTiro());
     }
-    void PiscarIcon()
+    IEnumerator IniciarTiro()
     {
-        tempo += Time.deltaTime;
-        if(tempo >= tempointervalo)
+        TiroAtivado = true;
+        float time = 10;
+        float cooldawn = 0.3f;
+        while(time > 0)
         {
-            if(InvencibleUI.gameObject.activeSelf)
+            time -= cooldawn;
+            SpawnTiro();
+            yield return new WaitForSeconds(cooldawn);
+        }
+        TiroAtivado = false;
+
+    }
+    void SpawnTiro()
+    {
+        GameObject novotiro = Instantiate(Tiro, transform.position, transform.rotation);
+        novotiro.transform.position = WeaponTiro.transform.position;
+        Destroy(novotiro, 1);
+    }
+    IEnumerator UITempoSpeed(float time)
+    {
+        float tempocontagem = time;
+        while(true)
+        {
+            yield return new WaitForSeconds(0.2f);
+            tempocontagem-= 0.2f;
+            if(tempocontagem <= 0)
             {
-                InvencibleUI.gameObject.SetActive(false);
-                Anim.SetBool("IsInvicible", false);
+                break;
             }
             else
             {
-                InvencibleUI.gameObject.SetActive(true);
-                Anim.SetBool("IsInvicible", true);
+                if (tempocontagem > 0 && tempocontagem < 4)
+                {
+                    if(VelocityUI.gameObject.activeSelf)
+                    {
+                        VelocityUI.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        VelocityUI.gameObject.SetActive(true);
+                    }
+                }
             }
-            tempo = 0;
         }
+        VelocityUI.gameObject.SetActive(false);
+    }
+
+    IEnumerator UITempoInvencible(float time)
+    {
+        float tempocontagem = time;
+        IsInvencible = true;
+        Anim.SetBool("IsInvicible", true);
+        InvencibleUI.gameObject.SetActive(true);
+        activeinvencible(SpeedBall, true);
+        while(true)
+        {
+            yield return new WaitForSeconds(0.2f);
+            tempocontagem-= 0.2f;
+            if(tempocontagem <= 0)
+            {
+                Anim.SetBool("IsInvicible", false);
+                IsInvencible = false;
+                activeinvencible(SpeedBall, false);
+                break;
+            }
+            else
+            {
+                if (tempocontagem > 0 && tempocontagem < 4)
+                {
+                    if(InvencibleUI.gameObject.activeSelf)
+                    {
+                        InvencibleUI.gameObject.SetActive(false);
+                        Anim.SetBool("IsInvicible", false);
+                        activeinvencible(SpeedBall, false);
+                    }
+                    else
+                    {
+                        InvencibleUI.gameObject.SetActive(true);
+                        Anim.SetBool("IsInvicible", true);
+                        activeinvencible(SpeedBall, true);
+                    }
+                }
+            }
+        }
+        InvencibleUI.gameObject.SetActive(false);
     }
 
     public bool IsSpeedActive()
@@ -116,60 +179,60 @@ public class Bola : MonoBehaviour
 
     public IEnumerator AlterVelocityTime(float time, float speed)
     {
-        speedball = speed;
+        if(!GameOver)
+        {
+            speedball = speed;
+        }
         IsSpeed = true;
         VelocityUI.gameObject.SetActive(true);
-        SpeedBall.SetActive(true);
+        //SpeedBall.SetActive(true);
+        activespeed(SpeedBall, true);
+        StartCoroutine(UITempoSpeed(time));
         yield return new WaitForSeconds(time);
         VelocityUI.gameObject.SetActive(false);
-        SpeedBall.SetActive(false);
+        activespeed(SpeedBall, false);
+        //SpeedBall.SetActive(false);
         IsSpeed = false;
-        speedball = 4;
+        if(!GameOver)
+        {
+            speedball = 4;
+        }
+
+    }
+
+    void activespeed(GameObject Speedball, bool active)
+    {
+        Transform[] balls = SpeedBall.GetComponentsInChildren<Transform>();
+        foreach (Transform x in balls)
+        {
+            if (x.tag == "PlayerSpeed")
+            {
+                PlayerSpeed valor = x.GetComponent<PlayerSpeed>();
+                valor.ActiveSprite(active);
+            }
+        }
+    }
+
+    void activeinvencible(GameObject Speedball, bool active)
+    {
+        Transform[] balls = SpeedBall.GetComponentsInChildren<Transform>();
+        foreach (Transform x in balls)
+        {
+            if (x.tag == "PlayerSpeed")
+            {
+                PlayerSpeed valor = x.GetComponent<PlayerSpeed>();
+                valor.ActiveInvencible(active);
+            }
+        }
     }
     public void Invencible()
     {
-        StartCoroutine(AsInvencible());
+        //StartCoroutine(AsInvencible());
+        StartCoroutine(UITempoInvencible(Spawn.spawn.TimeInvencible));
     }
     public bool valorInvencible()
     {
         return IsInvencible;
-    }
-    IEnumerator AsInvencible()
-    {
-        contInv = Spawn.spawn.TimeInvencible;
-        IniCont = true;
-        IsInvencible = true;
-        Anim.SetBool("IsInvicible", true);
-        InvencibleUI.gameObject.SetActive(true);
-        /*
-        Transform[] speeds = SpeedBall.GetComponentsInChildren<Transform>();
-        foreach(Transform x in speeds)
-        {
-            try{
-                PlayerSpeed players = x.GetComponent<PlayerSpeed>();
-                players.ActiveInvencible(true);
-            }catch{
-
-            }
-        }
-        */
-        yield return new WaitForSeconds(Spawn.spawn.TimeInvencible);
-        /*
-        foreach(Transform x in speeds)
-        {
-            try{
-                PlayerSpeed players = x.GetComponent<PlayerSpeed>();
-                players.ActiveInvencible(false);
-            }catch{
-
-            }
-        }
-        */
-        InvencibleUI.gameObject.SetActive(false);
-        Anim.SetBool("IsInvicible", false);
-        IsInvencible = false;
-        contInv = 0;
-        IniCont = false;
     }
 
     void VerificyBug()
@@ -185,11 +248,13 @@ public class Bola : MonoBehaviour
     }
     public void Destruir()
     {
+        StopAllCoroutines();
         StartCoroutine(destruir());
     }
 
     IEnumerator destruir()
     {
+        GameOver = true;
         SpeedBall.SetActive(false);
         GameController.instance.gameover = true;
         gameObject.name = "GameOver";

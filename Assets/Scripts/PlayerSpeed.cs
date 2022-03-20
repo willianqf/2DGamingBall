@@ -30,8 +30,8 @@ public class PlayerSpeed : MonoBehaviour
         anim.SetBool("IsInvicible", valor);
     }
 
-    public void Unable()
+    public void ActiveSprite(bool valor)
     {
-        anim.SetBool("IsInvicible", false);
+        sprit.enabled = valor;
     }
 }
